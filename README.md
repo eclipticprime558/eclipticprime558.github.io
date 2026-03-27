@@ -4,7 +4,7 @@ Converts **Northern Sky Raid Tools** cooldown plan exports into **Method Raid To
 
 Paste your NSRT export, click Convert, paste the result into MRT.
 
-**[Open the tool →](https://eclipticprime558.github.io/nsrt-mrt/)**
+**[Open the tool →](https://eclipticprime558.github.io/)**
 
 ---
 
