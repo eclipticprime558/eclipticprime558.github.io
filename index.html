@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NSRT → MRT Converter</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e222c;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --gold: #c8a84b;
+    --gold-dim: #8a6e28;
+    --gold-glow: rgba(200,168,75,0.15);
+    --text: #e8e2d4;
+    --text-dim: #8a8478;
+    --text-muted: #555048;
+    --green: #5a9e6a;
+    --red: #9e5a5a;
+    --blue: #5a7a9e;
+    --mono: 'Courier New', monospace;
+    --sans: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border2);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo {
+    width: 32px;
+    height: 32px;
+    background: var(--gold-glow);
+    border: 1px solid var(--gold-dim);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--gold);
+    font-weight: bold;
+  }
+
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .header-badge {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .main {
+    padding: 20px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .panel-label .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  .panel-label.input-label .dot { background: var(--blue); }
+  .panel-label.output-label .dot { background: var(--green); }
+
+  .panel-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 12px;
+    resize: vertical;
+    min-height: 420px;
+    width: 100%;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  textarea:focus {
+    border-color: var(--border2);
+  }
+
+  textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  textarea#output {
+    color: var(--gold);
+  }
+
+  .btn {
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 5px;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover {
+    border-color: var(--border2);
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .btn.primary {
+    background: var(--gold-glow);
+    border-color: var(--gold-dim);
+    color: var(--gold);
+    font-weight: 600;
+    padding: 10px 28px;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+
+  .btn.primary:hover {
+    background: rgba(200,168,75,0.25);
+    border-color: var(--gold);
+    color: #e6c96a;
+  }
+
+  .btn.copy-btn.copied {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(90,158,106,0.1);
+  }
+
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .controls-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .field-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .field-group label {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .field-group select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 5px 8px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .field-group select:focus {
+    border-color: var(--border2);
+  }
+
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toggle-group label {
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  input[type="checkbox"] {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    background: var(--surface2);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  input[type="checkbox"]:checked {
+    background: var(--gold-dim);
+    border-color: var(--gold);
+  }
+
+  input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 1px;
+    width: 5px;
+    height: 8px;
+    border: 2px solid var(--gold);
+    border-top: none;
+    border-left: none;
+    transform: rotate(40deg);
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .stat strong {
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+
+  .stat .sep {
+    width: 1px;
+    height: 12px;
+    background: var(--border);
+  }
+
+  .error-box {
+    background: rgba(158,90,90,0.1);
+    border: 1px solid rgba(158,90,90,0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #d48080;
+    display: none;
+    font-family: var(--mono);
+  }
+
+  .diff-map {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+
+  .diff-map-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
+  }
+
+  .diff-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+
+  .diff-name { color: var(--text-dim); }
+
+  .diff-val {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .diff-val.heroic { color: #5a9e6a; }
+  .diff-val.normal { color: var(--blue); }
+  .diff-val.mythic { color: #b05a9e; }
+  .diff-val.lfr { color: var(--text-muted); }
+
+  @media (max-width: 700px) {
+    .panels { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">⚔</div>
+    <h1>NSRT → MRT Converter</h1>
+  </div>
+  <span class="header-badge">Northern Sky → Method Raid Tools</span>
+</div>
+
+<div class="main">
+
+  <div class="controls">
+    <div class="controls-left">
+      <div class="field-group">
+        <label>Difficulty override</label>
+        <select id="diffOverride">
+          <option value="">Auto-detect</option>
+          <option value="14">Normal (14)</option>
+          <option value="15">Heroic (15)</option>
+          <option value="16">Mythic (16)</option>
+          <option value="17">LFR (17)</option>
+        </select>
+      </div>
+      <div class="toggle-group">
+        <label>
+          <input type="checkbox" id="keepBossAbility" checked>
+          Include {bossAbility:X}
+        </label>
+      </div>
+      <div class="toggle-group">
+        <label>
+          <input type="checkbox" id="nameFirst">
+          Name before spell
+        </label>
+      </div>
+    </div>
+    <button class="btn primary" onclick="convert()">Convert</button>
+  </div>
+
+  <div id="errorBox" class="error-box"></div>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label input-label"><span class="dot"></span>NSRT input</span>
+        <div class="panel-actions">
+          <button class="btn" onclick="clearInput()">Clear</button>
+          <button class="btn" onclick="loadSample()">Load sample</button>
+        </div>
+      </div>
+      <textarea id="input" placeholder="Paste your Northern Sky Raid Tools export here...
+
+EncounterID:3180;Difficulty:Heroic;Name:Boss Name
+time:13;ph:1;bossSpell:1246749;tag:PlayerName;spellid:391528;
+time:31;ph:1;tag:AnotherPlayer;spellid:64843;
+..."></textarea>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-label output-label"><span class="dot"></span>MRT output</span>
+        <div class="panel-actions">
+          <button class="btn copy-btn" id="copyBtn" onclick="copyOutput()">Copy</button>
+        </div>
+      </div>
+      <textarea id="output" readonly placeholder="Converted MRT format will appear here..."></textarea>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="diff-map">
+    <div class="diff-map-title">Difficulty mapping reference</div>
+    <div class="diff-grid">
+      <div class="diff-item"><span class="diff-name">LFR</span><span class="diff-val lfr">17</span></div>
+      <div class="diff-item"><span class="diff-name">Normal</span><span class="diff-val normal">14</span></div>
+      <div class="diff-item"><span class="diff-name">Heroic</span><span class="diff-val heroic">15</span></div>
+      <div class="diff-item"><span class="diff-name">Mythic</span><span class="diff-val mythic">16</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DIFF_MAP = {
+  'lfr': 17, 'looking for raid': 17,
+  'normal': 14,
+  'heroic': 15,
+  'mythic': 16
+};
+
+const SAMPLE = `EncounterID:3180;Difficulty:Heroic;Name:Lightblinded Vanguard
+time:13;ph:1;bossSpell:1246749;tag:Deathtrolls;spellid:391528;
+time:31;ph:1;tag:Apöllô;spellid:64843;
+time:41;ph:1;tag:Ladumpy;spellid:192077;
+time:76;ph:1;bossSpell:1251812;tag:Deathtrolls;spellid:391528;
+time:78;ph:1;tag:Emptee;spellid:192077;
+time:88;ph:1;tag:Deathtrolls;spellid:740;
+time:89;ph:1;tag:Velocibanned;spellid:97462;
+time:92;ph:1;tag:Capitainbold;spellid:51052;
+time:136;ph:1;tag:Deathtrolls;spellid:391528;
+time:141;ph:1;tag:Drüreon;spellid:374227;
+time:146;ph:1;tag:Canlex;spellid:31821;
+time:146;ph:1;tag:Zaqiel;spellid:51052;
+time:155;ph:1;bossSpell:1251857;tag:Apöllô;spellid:64843;
+time:196;ph:1;bossSpell:1251812;tag:Deathtrolls;spellid:391528;
+time:209;ph:1;bossSpell:1258659;tag:Emptee;spellid:192077;
+time:218;ph:1;tag:Ladumpy;spellid:192077;
+time:258;ph:1;bossSpell:1258659;tag:Deathtrolls;spellid:391528;
+time:270;ph:1;tag:Deathtrolls;spellid:740;
+time:271;ph:1;bossSpell:1250839;tag:Velocibanned;spellid:97462;
+time:320;ph:1;tag:Deathtrolls;spellid:391528;
+time:322;ph:1;tag:Drüreon;spellid:374227;
+time:326;ph:1;tag:Apöllô;spellid:64843;
+time:328;ph:1;bossSpell:1251812;tag:Canlex;spellid:31821;
+time:332;ph:1;bossSpell:1246765;tag:Capitainbold;spellid:51052;
+time:333;ph:1;tag:Emptee;spellid:192077;
+time:386;ph:1;bossSpell:1246162;tag:Ladumpy;spellid:192077;
+time:434;ph:1;tag:Zaqiel;spellid:51052;`;
+
+function parseField(str, key) {
+  const m = str.match(new RegExp(key + ':([^;\\s]+)'));
+  return m ? m[1] : null;
+}
+
+function parseLine(line) {
+  const fields = {};
+  const pairs = line.split(';').filter(p => p.trim());
+  for (const pair of pairs) {
+    const idx = pair.indexOf(':');
+    if (idx === -1) continue;
+    const k = pair.slice(0, idx).trim().toLowerCase();
+    const v = pair.slice(idx + 1).trim();
+    fields[k] = v;
+  }
+  return fields;
+}
+
+function resolveDifficulty(raw, override) {
+  if (override) return override;
+  if (!raw) return '15';
+  const n = parseInt(raw, 10);
+  if (!isNaN(n)) return String(n);
+  const key = raw.toLowerCase().trim();
+  return String(DIFF_MAP[key] ?? 15);
+}
+
+function convert() {
+  const raw = document.getElementById('input').value.trim();
+  const errorBox = document.getElementById('errorBox');
+  const keepBoss = document.getElementById('keepBossAbility').checked;
+  const nameFirst = document.getElementById('nameFirst').checked;
+  const diffOverride = document.getElementById('diffOverride').value;
+
+  errorBox.style.display = 'none';
+
+  if (!raw) {
+    showError('No input provided. Paste your NSRT export and try again.');
+    return;
+  }
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const outputLines = [];
+  const errors = [];
+  let cdLines = 0, bossLines = 0;
+
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Header line detection — contains EncounterID
+    if (/EncounterID:/i.test(line)) {
+      const fields = parseLine(line);
+      const encId = fields['encounterid'] || '0';
+      const diff = resolveDifficulty(fields['difficulty'] || null, diffOverride);
+      const name = fields['name'] || 'Unknown';
+      outputLines.push(`EncounterID:${encId} Difficulty:${diff} Name:${name}`);
+      i++;
+      continue;
+    }
+
+    // CD line detection — contains time: and spellid:
+    if (/time:/i.test(line) && /spellid:/i.test(line)) {
+      const fields = parseLine(line);
+      const time = fields['time'];
+      const spellid = fields['spellid'];
+      const tag = fields['tag'];
+      const bossSpell = fields['bossspell'];
+
+      const parts = [];
+      if (time) parts.push(`{time:${time}}`);
+      if (bossSpell && keepBoss) { parts.push(`{bossAbility:${bossSpell}}`); bossLines++; }
+
+      if (nameFirst) {
+        if (tag) parts.push(tag);
+        if (spellid) parts.push(`{spell:${spellid}}`);
+      } else {
+        if (spellid) parts.push(`{spell:${spellid}}`);
+        if (tag) parts.push(tag);
+      }
+
+      if (parts.length > 0) {
+        outputLines.push(parts.join(' '));
+        cdLines++;
+      }
+      i++;
+      continue;
+    }
+
+    // Unrecognized line — pass through with comment
+    outputLines.push(`-- ${line}`);
+    errors.push(`Line ${i + 1}: unrecognized format, passed through as comment`);
+    i++;
+  }
+
+  document.getElementById('output').value = outputLines.join('\n');
+  renderStats(cdLines, bossLines, errors.length, outputLines.length);
+
+  if (errors.length > 0) {
+    showError(errors.join('\n'));
+  }
+}
+
+function renderStats(cds, boss, errs, total) {
+  const bar = document.getElementById('statsBar');
+  bar.innerHTML = `
+    <div class="stat"><strong>${total}</strong> lines output</div>
+    <div class="stat"><span class="sep"></span></div>
+    <div class="stat"><strong>${cds}</strong> CD assignments</div>
+    <div class="stat"><span class="sep"></span></div>
+    <div class="stat"><strong>${boss}</strong> bossAbility tags</div>
+    ${errs > 0 ? `<div class="stat"><span class="sep"></span></div><div class="stat" style="color:#d48080"><strong>${errs}</strong> warnings</div>` : ''}
+  `;
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+}
+
+function copyOutput() {
+  const val = document.getElementById('output').value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function clearInput() {
+  document.getElementById('input').value = '';
+  document.getElementById('output').value = '';
+  document.getElementById('statsBar').innerHTML = '';
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+function loadSample() {
+  document.getElementById('input').value = SAMPLE;
+  convert();
+}
+
+document.getElementById('input').addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); convert(); }
+});
+</script>
+</body>
+</html>
